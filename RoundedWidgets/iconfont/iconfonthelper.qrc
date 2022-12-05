@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/iconfont">
+        <file>FontAwesome_Pro5.11.2/webfonts/font-awesome.css</file>
+        <file>FontAwesome_Pro5.11.2/webfonts/fa-brands-400.ttf</file>
+        <file>FontAwesome_Pro5.11.2/webfonts/fa-duotone-900.ttf</file>
+        <file>FontAwesome_Pro5.11.2/webfonts/fa-light-300.ttf</file>
+        <file>FontAwesome_Pro5.11.2/webfonts/fa-regular-400.ttf</file>
+        <file>FontAwesome_Pro5.11.2/webfonts/fa-solid-900.ttf</file>
+    </qresource>
+</RCC>
