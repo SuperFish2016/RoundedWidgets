@@ -2,10 +2,12 @@
 #define TABWIDGET_H
 
 #include <QTabWidget>
-#include "tabbar.h"
 #include <QPushButton>
 
 #include "roundedwidget/roundedwidget.h"
+
+class TabBar;
+class ToolBar;
 
 class TabWidget : public QTabWidget
 {
@@ -37,8 +39,6 @@ protected slots:
     void onCloseButtonClicked();
 
 private:
-    TabBar* m_tabBar;
-
-
+    TabBar*     m_tabBar;
 };
 #endif // TABWIDGET_H

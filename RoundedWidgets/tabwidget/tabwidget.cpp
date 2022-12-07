@@ -2,12 +2,16 @@
 #include <QLayout>
 #include <QMessageBox>
 #include "iconfont/iconfonthelper.hpp"
+#include "toolbar.h"
+#include "tabbar.h"
+#include "tabpagewidget.h"
+
 TabWidget::TabWidget(QWidget *parent)
 {
     m_tabBar = new TabBar(this);
     m_tabBar->setIconSize(QSize(25, 20));
     connect(m_tabBar, &TabBar::addButtonClicked, this, [=](){
-        int index = this->addNewTab(new QWidget, "New Tab");
+        int index = this->addNewTab(new TabPageWidget, "New Tab");
         QPushButton* button = new QPushButton;
         IconFontDuotoneHelper::setIcon(button, "images", 10, Qt::black);
         this->setTabButton(index, button);

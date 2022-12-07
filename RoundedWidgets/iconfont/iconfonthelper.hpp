@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QDebug>
+#include <QPainter>
 
 static const QString fa_light_ttf   = ":/iconfont/FontAwesome_Pro5.11.2/webfonts/fa-light-300.ttf";
 static const QString fa_solid_ttf   = ":/iconfont/FontAwesome_Pro5.11.2/webfonts/fa-solid-900.ttf";
@@ -22,106 +23,87 @@ static QChar iconUnicode(const QMap<QString, QString>& m_iconUnicodeMap, const Q
 static void  setWidgetIcon(QFont& font, const QMap<QString, QString>& m_iconUnicodeMap,
                           QWidget *widget, const QString &iconName, int iconSize, const QColor& iconColor);
 
-class IconFontLightHelper
+/// The painter icon engine.
+#include <QIconEngine>
+class IconFontEngine : public QIconEngine
 {
 public:
-    static void setIcon(QWidget* widget, const QString& iconName, int iconSize, const QColor& iconColor = QColor()){
-        static bool loadSuccess = false;
-        if(!loadSuccess)
-        {
-            loadSuccess = loadFont(fa_light_ttf, m_font, m_iconUnicodeMap);
-            if(!loadSuccess)
-            {
-                qDebug() << "Icon font loaded failed, setIcon will not work properly.";
-                return;
-            }
-        }
-        setWidgetIcon(m_font, m_iconUnicodeMap, widget, iconName, iconSize, iconColor);
+    IconFontEngine(QIconEngine* parent = nullptr){}
+    IconFontEngine(QFont& font, const QMap<QString, QString>& iconUnicodeMap, const QString& iconName,
+                   int iconSize, QColor iconColor = QColor(), QIconEngine* parent = nullptr)
+        :m_font(font),m_iconUnicodeMap(iconUnicodeMap), m_iconName(iconName), m_iconSize(iconSize), m_iconColor(iconColor){
+
     }
-
-protected:
-    static QFont m_font;
-    static QMap<QString, QString> m_iconUnicodeMap;
-};
-
-class IconFontSolidHelper
-{
-public:
-    static void setIcon(QWidget* widget, const QString& iconName, int iconSize, const QColor& iconColor = QColor()){
-        static bool loadSuccess = false;
-        if(!loadSuccess)
-        {
-            loadSuccess = loadFont(fa_solid_ttf, m_font, m_iconUnicodeMap);
-            if(!loadSuccess)
-            {
-                qDebug() << "Icon font loaded failed, setIcon will not work properly.";
-                return;
-            }
-        }
-        setWidgetIcon(m_font, m_iconUnicodeMap, widget, iconName, iconSize, iconColor);
+    IconFontEngine* clone() const
+    {
+        return new IconFontEngine(nullptr);
     }
-private:
-    static QFont m_font;
-    static QMap<QString, QString> m_iconUnicodeMap;
-};
-
-class IconFontDuotoneHelper
-{
-public:
-    static void setIcon(QWidget* widget, const QString& iconName, int iconSize, const QColor& iconColor = QColor()){
-        static bool loadSuccess = false;
-        if(!loadSuccess)
+    virtual void paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state)
+    {
+        painter->save();
+        if(mode == QIcon::Disabled)
+            m_iconColor = Qt::gray;
+        painter->setPen(m_iconColor);
+        m_font.setPointSize(m_iconSize);
+        painter->setFont(m_font);
+        QChar text = iconUnicode(m_iconUnicodeMap, m_iconName);
+        painter->drawText(rect, QString(text), QTextOption( Qt::AlignCenter | Qt::AlignVCenter));
+        painter->restore();
+    }
+    virtual QPixmap pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state)
+    {
+        QPixmap pm(size);
+        pm.fill( Qt::transparent ); // we need transparency
         {
-            loadSuccess = loadFont(fa_duotone_ttf, m_font, m_iconUnicodeMap);
-            if(!loadSuccess)
-            {
-                qDebug() << "Icon font loaded failed, setIcon will not work properly.";
-                return;
-            }
+            QPainter p(&pm);
+            paint(&p, QRect(QPoint(0,0),size), mode, state);
         }
-        setWidgetIcon(m_font, m_iconUnicodeMap, widget, iconName, iconSize, iconColor);
+        return pm;
     }
 private:
-    static QFont m_font;
-    static QMap<QString, QString> m_iconUnicodeMap;
+    QFont   m_font;
+    QMap<QString, QString> m_iconUnicodeMap;
+    QString m_iconName;
+    int     m_iconSize;
+    QColor  m_iconColor;
 };
 
-class IconFontRegularHelper
-{
-public:
-    static void setIcon(QWidget* widget, const QString& iconName, int iconSize, const QColor& iconColor = QColor()){
-        static bool loadSuccess = false;
-        if(!loadSuccess)
-        {
-            loadSuccess = loadFont(fa_regular_ttf, m_font, m_iconUnicodeMap);
-            if(!loadSuccess)
-            {
-                qDebug() << "Icon font loaded failed, setIcon will not work properly.";
-                return;
-            }
-        }
-        setWidgetIcon(m_font, m_iconUnicodeMap, widget, iconName, iconSize, iconColor);
-    }
-private:
-    static QFont m_font;
-    static QMap<QString, QString> m_iconUnicodeMap;
-};
+#define IconFontHelperClass(type, ttf) \
+    struct IconFont##type##Helper{ \
+        static void setIcon(QWidget* widget, const QString& iconName, int iconSize, const QColor& iconColor = QColor()){ \
+            if(!m_loadFont){ \
+                m_loadFont = loadFont(ttf, m_font, m_iconUnicodeMap); \
+                if(!m_loadFont) { \
+                    qDebug() << "Error: Icon font read failed."; \
+                    return; \
+                } \
+            } \
+            setWidgetIcon(m_font, m_iconUnicodeMap, widget, iconName, iconSize, iconColor); \
+        } \
+        static QIcon icon(const QString& iconName, int iconSize, const QColor& iconColor = QColor()){ \
+            if(!m_loadFont) { \
+                m_loadFont = loadFont(ttf, m_font, m_iconUnicodeMap); \
+                if(!m_loadFont) { \
+                    qDebug() << "Error: Icon font read failed."; \
+                    return QIcon(); \
+                } \
+            } \
+            return QIcon(new IconFontEngine(m_font, m_iconUnicodeMap, iconName, iconSize, iconColor, nullptr)); \
+        } \
+    protected: \
+        static bool  m_loadFont; \
+        static QFont m_font; \
+        static QMap<QString, QString> m_iconUnicodeMap; \
+    }; \
+    _declspec(selectany) bool  IconFont##type##Helper::m_loadFont = false; \
+    _declspec(selectany) QFont IconFont##type##Helper::m_font; \
+    _declspec(selectany) QMap<QString, QString> IconFont##type##Helper::m_iconUnicodeMap;
 
-// fa regular 400
-_declspec(selectany) QFont IconFontLightHelper::m_font;
-_declspec(selectany) QMap<QString, QString> IconFontLightHelper::m_iconUnicodeMap;
 
-// fa solid 900
-_declspec(selectany) QFont IconFontSolidHelper::m_font;
-_declspec(selectany) QMap<QString, QString> IconFontSolidHelper::m_iconUnicodeMap;
-
-// fa duotone 900
-_declspec(selectany) QFont IconFontDuotoneHelper::m_font;
-_declspec(selectany) QMap<QString, QString> IconFontDuotoneHelper::m_iconUnicodeMap;
-
-//fa-light-300.ttf(default)
-_declspec(selectany) QFont IconFontRegularHelper::m_font;
-_declspec(selectany) QMap<QString, QString> IconFontRegularHelper::m_iconUnicodeMap;
+IconFontHelperClass(Light,  fa_light_ttf) // IconFontLightHelper
+IconFontHelperClass(Solid,  fa_solid_ttf) // IconFontSolidHelper
+IconFontHelperClass(Duotone, fa_duotone_ttf) // IconFontDuotoneHelper
+IconFontHelperClass(Regular, fa_regular_ttf) // IconFontRegularHelper
 
 static QChar iconUnicode(const QMap<QString, QString>& m_iconUnicodeMap, const QString &iconName)
 {

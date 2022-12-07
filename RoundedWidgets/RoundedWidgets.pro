@@ -18,9 +18,11 @@ SOURCES += \
     roundedmessagebox.cpp \
     roundedwidget/roundedwidget.cpp \
     tabwidget/tabbar.cpp \
+    tabwidget/tabpagewidget.cpp \
     tabwidget/tabwidget.cpp \
     tabwidget/tabwindow.cpp \
-    tabwidget/windowcontrolbuttons.cpp
+    tabwidget/windowcontrolbuttons.cpp \
+    toolbar.cpp
 
 HEADERS += \
     RoundedWindow.h \
@@ -31,9 +33,11 @@ HEADERS += \
     style.h \
     tabwidget/tabbar.h \
     tabwidget/tabbardrawhelper.h \
+    tabwidget/tabpagewidget.h \
     tabwidget/tabwidget.h \
     tabwidget/tabwindow.h \
-    tabwidget/windowcontrolbuttons.h
+    tabwidget/windowcontrolbuttons.h \
+    toolbar.h
 
 FORMS += \
     mainwindow.ui

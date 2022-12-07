@@ -1,9 +1,9 @@
 #include "tabwindow.h"
 #include <QVBoxLayout>
 #include <QDebug>
+#include <QTabBar>
 #include <QSizeGrip>
 #include "windowcontrolbuttons.h"
-
 TabWindow::TabWindow(QWidget *parent)
     :QWidget(parent)
 {
@@ -16,6 +16,23 @@ TabWindow::TabWindow(QWidget *parent)
     layout->setContentsMargins(5, 5, 5 ,5);
     this->setLayout(layout);
 
+    createWindowControlButtons();
+
+    this->setWindowFlag(Qt::FramelessWindowHint);
+    this->setAttribute(Qt::WA_TranslucentBackground);
+    this->resize(1200, 800);
+}
+
+void TabWindow::resizeEvent(QResizeEvent *ev)
+{
+    m_controlButtons->setFixedSize(QSize(90, 30));
+    m_controlButtons->move(QPoint(ev->size().width() - 90, 0));
+    m_tabWidget->tabBar()->setMaximumWidth(ev->size().width() - 110);
+    QWidget::resizeEvent(ev);
+}
+
+void TabWindow::createWindowControlButtons()
+{
     m_controlButtons = new WindowControlButtons(this);
     connect(m_controlButtons, &WindowControlButtons::minimizedButtonClicked, [=](){
         this->showMinimized();
@@ -30,24 +47,13 @@ TabWindow::TabWindow(QWidget *parent)
         this->showNormal();
         m_sizeGripWidget->show();
     });
-
-    this->setWindowFlag(Qt::FramelessWindowHint);
-    this->setAttribute(Qt::WA_TranslucentBackground);
-}
-
-void TabWindow::resizeEvent(QResizeEvent *ev)
-{
-    m_controlButtons->setFixedSize(QSize(90, 30));
-    m_controlButtons->move(QPoint(ev->size().width() - 90, 0));
-    m_tabWidget->tabBar()->setMaximumWidth(ev->size().width() - 110);
-    QWidget::resizeEvent(ev);
 }
 
 void TabWindow::mousePressEvent(QMouseEvent *event)
 {
     if((Qt::WindowFullScreen & this->windowState()) || (Qt::WindowMaximized & this->windowState()))
         return QWidget::mousePressEvent(event);
-    if(m_tabWidget->geometry().contains(event->pos()))
+    if(m_tabWidget->geometry().contains(event->pos()) && event->pos().y() - m_tabWidget->geometry().y() < 30)
     {
         m_mousePressed = true;
         m_mousePoint = event->pos();
@@ -65,7 +71,7 @@ void TabWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void TabWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if(m_tabWidget->geometry().contains(event->pos()))
+    if(m_tabWidget->geometry().contains(event->pos()) && event->pos().y() - m_tabWidget->geometry().y() < 30)
         m_controlButtons->triggerNormalOrMaxButtonClick();
 }
 
