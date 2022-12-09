@@ -1,5 +1,6 @@
 #include "toolbar.h"
 #include <QMenu>
+#include <QDebug>
 #include <QLayout>
 #include "iconfont/iconfonthelper.hpp"
 
@@ -8,60 +9,64 @@ typedef  IconFontSolidHelper ICON_TYPE;
 ToolBar::ToolBar(QWidget *parent)
     : QToolBar(parent)
 {
-    createActions();
+    createToolBarActions();
     this->layout()->setSpacing(20);
-    this->setIconSize(QSize(50, 50));
+    this->setIconSize(QSize(45, 45));
 }
 
-
-void ToolBar::createAction(QWidget* parent, const QString& text, const QString& iconName, int iconSize, const QColor& iconColor)
+void ToolBar::createAction(QWidget *parent, const ActionIcon &actionIcon, int iconSize, const QColor &iconColor)
 {
-    QAction* action = new QAction(tr(""), this);
-    action->setText(text);
-    action->setIcon(ICON_TYPE::icon(iconName, iconSize, iconColor));
-    action->setToolTip(text);
-    //connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+    QAction* action = new QAction(m_actionIcons[actionIcon.id].text, this);
+    action->setIcon(ICON_TYPE::icon(m_actionIcons[actionIcon.id].icon, iconSize, iconColor));
+    action->setToolTip(m_actionIcons[actionIcon.id].text);
+    connect(action, &QAction::triggered, [=](){
+        emit actionClicked(m_actionIcons[actionIcon.id].id);
+    });
     parent->addAction(action);
 }
 
-QMenu* ToolBar::createActionMenu(const QString& text, const QString& iconName, int iconSize, const QColor &actionColor)
+QMenu* ToolBar::createActionMenu(const ActionIcon& actionIcon, int iconSize, const QColor &actionColor)
 {
     QAction *menuAction = new QAction();
-    menuAction->setIcon(ICON_TYPE::icon(iconName, iconSize, actionColor));
-    menuAction->setText(text);
+    menuAction->setIcon(ICON_TYPE::icon(m_actionIcons[actionIcon.id].icon, iconSize, actionColor));
+    menuAction->setText(m_actionIcons[actionIcon.id].text);
 
     QMenu *menu = new QMenu("Menu", nullptr);
+    menu->setWindowFlags(Qt::FramelessWindowHint | Qt::Popup);
+    menu->setAttribute(Qt::WA_TranslucentBackground);
+    menu->setWindowFlag(Qt::NoDropShadowWindowHint);
+    menu->setStyleSheet("border:1px solid transparent; border-radius:8px; padding:5 5 0 5;");
     menuAction->setMenu(menu);
     this->addAction(menuAction);
     return menu;
 }
 
-void ToolBar::createActions()
+void ToolBar::createToolBarActions()
 {
-    const QColor actionColor = Qt::darkCyan;
+    const QColor actionColor = Qt::darkGreen;
     const int iconSize = 15;
 
-    createAction(this, "Back",    "arrow-circle-left",    iconSize, actionColor);
-    createAction(this, "Forward", "arrow-circle-right",   iconSize, actionColor);
-    this->addSeparator();
+    for(int i = 0; i < sizeof(m_actionIcons) / sizeof(m_actionIcons[0]); i++)
+    {
+        if(m_actionIcons[i].id == Open || m_actionIcons[i].id == Add || m_actionIcons[i].id == More) this->addSeparator();
+        if(m_actionIcons[i].id == Add)
+        {
+            QMenu* addMenu = createActionMenu(m_actionIcons[Add],   iconSize , actionColor);
+            createAction(addMenu, m_actionIcons[AddCircle],         iconSize - 5, actionColor);
+            createAction(addMenu, m_actionIcons[AddRectangle],      iconSize - 5, actionColor);
+            createAction(addMenu, m_actionIcons[AddPolygon],        iconSize - 5, actionColor);
+            createAction(addMenu, m_actionIcons[AddTriangle],       iconSize - 5, actionColor);
+            i = AddTriangle + 1;
+            continue;
+        }
 
-    createAction(this, "Open",    "folder-open",  iconSize, actionColor);
-    createAction(this, "Save",    "save",         iconSize, actionColor);
-    createAction(this, "Export",  "file-export",  iconSize - 3, actionColor);
-    this->addSeparator();
-
-    QMenu* addMenu = createActionMenu("Add", "plus-circle",    iconSize,     actionColor);
-    createAction(addMenu, "Circle",    "circle",               iconSize - 6, actionColor);
-    createAction(addMenu, "Rectangle", "rectangle-landscape",  iconSize - 6, actionColor);
-    createAction(addMenu, "Polygon",   "octagon",   iconSize - 6, actionColor);
-    createAction(addMenu, "Triangle",  "triangle",  iconSize - 6, actionColor);
-
-    createAction(this, "Zoom In",    "search-plus",  iconSize, actionColor);
-    createAction(this, "Zoom Out",   "search-minus", iconSize, actionColor);
-
-    this->addSeparator();
-
-    QMenu* moreMenu = createActionMenu("More", "ellipsis-h",    iconSize - 3, actionColor);
-    createAction(moreMenu, "Circle",    "circle",               iconSize - 4, actionColor);
-    createAction(moreMenu, "Rectangle", "rectangle-landscape",  iconSize - 4, actionColor);
+        if(m_actionIcons[i].id == More)
+        {
+            QMenu* moreMenu = createActionMenu(m_actionIcons[More], iconSize -3, actionColor);
+            createAction(moreMenu, m_actionIcons[Options], iconSize - 3 , actionColor);
+            i = Options + 1;
+            continue;
+        }
+        createAction(this, m_actionIcons[i], iconSize , actionColor);
+    }
 }
